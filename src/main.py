@@ -128,8 +128,7 @@ def main():
     else:
         logger.info("Skipping upload: No cookies found.")
 
-    else:
-        logger.info("Skipping upload: No cookies found.")
+
 
     # 6. Upload to YouTube Shorts (Official API)
     # Similar to TikTok, we check for presence of credentials

@@ -28,8 +28,9 @@ class ImageProvider:
                 # URL encode the prompt
                 encoded_prompt = quote(prompt)
                 
-                # Add delay to avoid rate limits (Pollinations anonymous tier)
-                time.sleep(10)
+                # Add aggressive delay to avoid rate limits (GitHub Actions IPs are often throttled)
+                logger.info("Waiting 30s to respect Pollinations rate limit...")
+                time.sleep(30)
 
                 # Construct URL with random seed to ensure freshness
                 import random

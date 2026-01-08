@@ -246,8 +246,9 @@ class TikTokUploader:
                          logger.warning("No confirmation found. Dump screenshot.")
                          page.screenshot(path="debug_warning_no_confirmation.png")
 
-                # Final grace period
-                time.sleep(10)
+                # Final grace period - Extended for GitHub Actions to ensure upload processes
+                logger.info("Waiting 60s to ensure upload finalizing...")
+                time.sleep(60)
                 return True
 
             except Exception as e:

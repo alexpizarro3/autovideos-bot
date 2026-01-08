@@ -12,6 +12,7 @@ from generators.voice_provider import VoiceProvider
 from generators.image_provider import ImageProvider
 from editor.video_maker import VideoMaker
 from uploaders.uploader import TikTokUploader
+from uploaders.youtube_uploader import YouTubeUploader
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -126,6 +127,29 @@ def main():
             logger.error(f"Upload failed: {e}")
     else:
         logger.info("Skipping upload: No cookies found.")
+
+    else:
+        logger.info("Skipping upload: No cookies found.")
+
+    # 6. Upload to YouTube Shorts (Official API)
+    # Similar to TikTok, we check for presence of credentials
+    youtube_token_path = os.path.join(project_root, "youtube_token.json")
+    if os.path.exists(youtube_token_path):
+        try:
+            yt_uploader = YouTubeUploader(token_path=youtube_token_path)
+            # YouTube Title limit is 100, Description 5000
+            # We reuse the same metadata
+            yt_uploader.upload_video(
+                video_path=output_video_path,
+                title=full_title,
+                description=f"{full_title}\n\n#shorts {' '.join(video_hashtags)}",
+                tags=video_hashtags + ["shorts"],
+                privacy_status="public"
+            )
+        except Exception as e:
+            logger.error(f"YouTube upload failed: {e}")
+    else:
+        logger.info("Skipping YouTube upload: No token found.")
 
     logger.info("Workflow completed.")
 

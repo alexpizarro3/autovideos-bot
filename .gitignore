@@ -1,6 +1,8 @@
 # Environment & Secrets
 .env
 tiktok_cookies.json
+client_secret.json
+youtube_token.json
 
 
 

@@ -1,113 +1,91 @@
 import os
-import time
+import json
 import logging
-from playwright.sync_api import sync_playwright
+import random
+import time
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
+from googleapiclient.errors import HttpError
 
 logger = logging.getLogger(__name__)
 
 class YouTubeUploader:
-    def __init__(self, cookies_path="youtube_cookies.json"):
-        self.cookies_path = cookies_path
+    def __init__(self, token_path="youtube_token.json"):
+        self.token_path = token_path
+        self.youtube = self._authenticate()
 
-    def upload_video(self, video_path: str, title: str, description: str):
-        """
-        Uploads a video to YouTube Shorts using Playwright.
-        """
-        logger.info("Starting YouTube upload...")
-        if not os.path.exists(video_path):
-            raise FileNotFoundError(f"Video file not found: {video_path}")
+    def _authenticate(self):
+        """Authenticates with YouTube API using the specific token file."""
+        if not os.path.exists(self.token_path):
+            logger.warning(f"YouTube token file not found at {self.token_path}. Upload will be skipped.")
+            return None
 
-        if not os.path.exists(self.cookies_path):
-            logger.error(f"YouTube cookies not found at {self.cookies_path}")
-            return False
-
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True, args=["--disable-blink-features=AutomationControlled"])
-            context = browser.new_context(
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                viewport={"width": 1280, "height": 720}
-            )
+        try:
+            # Load credentials from the JSON file
+            with open(self.token_path, "r") as f:
+                token_data = json.load(f)
             
-            # Load Cookies
-            try:
-                import json
-                with open(self.cookies_path, 'r') as f:
-                    cookies = json.load(f)
-                
-                # Sanitize cookies
-                for cookie in cookies:
-                     if 'sameSite' in cookie and cookie['sameSite'] not in ['Strict', 'Lax', 'None']:
-                            cookie['sameSite'] = 'None'
-                            cookie['secure'] = True
+            # Reconstruct Credentials object
+            # Note: We assume the JSON has all fields standard from a Refresh Token flow
+            creds = Credentials(
+                token=token_data.get("token"),
+                refresh_token=token_data.get("refresh_token"),
+                token_uri=token_data.get("token_uri"),
+                client_id=token_data.get("client_id"),
+                client_secret=token_data.get("client_secret"),
+                scopes=token_data.get("scopes")
+            )
 
-                context.add_cookies(cookies)
-            except Exception as e:
-                logger.error(f"Failed to load YouTube cookies: {e}")
-                return False
+            return build("youtube", "v3", credentials=creds)
+        except Exception as e:
+            logger.error(f"Failed to authenticate with YouTube: {e}")
+            return None
 
-            page = context.new_page()
+    def upload_video(self, video_path, title, description, tags, privacy_status="public"):
+        """
+        Uploads a video to YouTube.
+        privacy_status: 'public', 'private', or 'unlisted'.
+        """
+        if not self.youtube:
+            logger.warning("YouTube client not authenticated. Skipping upload.")
+            return
 
-            try:
-                logger.info("Navigating to YouTube Studio...")
-                page.goto("https://studio.youtube.com", timeout=60000)
-                
-                # Check login
-                if "accounts.google.com" in page.url:
-                    logger.error("Redirected to Google Login. Cookies invalid.")
-                    return False
+        try:
+            logger.info(f"Uploading to YouTube: {title}")
+            
+            body = {
+                "snippet": {
+                    "title": title[:100], # Max 100 chars
+                    "description": description[:5000], # Max 5000 chars
+                    "tags": tags,
+                    "categoryId": "22" # People & Blogs (generic)
+                },
+                "status": {
+                    "privacyStatus": privacy_status,
+                    "selfDeclaredMadeForKids": False
+                }
+            }
 
-                # Click Create -> Upload videos
-                logger.info("Opening upload dialog...")
-                page.click("#create-icon")
-                page.click("text=Upload videos")
-                
-                # Upload file
-                logger.info(f"Uploading file: {video_path}")
-                with page.expect_file_chooser() as fc_info:
-                    page.click("#select-files-button")
-                file_chooser = fc_info.value
-                file_chooser.set_files(video_path)
+            # Resumable upload
+            media = MediaFileUpload(video_path, chunksize=-1, resumable=True)
+            
+            request = self.youtube.videos().insert(
+                part=",".join(body.keys()),
+                body=body,
+                media_body=media
+            )
 
-                # Wait for upload to complete
-                # This is tricky, usually we wait for the progress bar to say "Checks complete"
-                logger.info("Waiting for upload processing...")
-                # Basic Wait - sophisticated logic would check the progress bar text
-                time.sleep(10)
-                
-                # Title
-                logger.info("Setting title...")
-                # YouTube defaults the title to filename, let's update it
-                # Logic to clear and type title
-                title_box = page.locator("#textbox").first
-                title_box.click()
-                title_box.press("Control+a")
-                title_box.press("Backspace")
-                title_box.type(title[:99]) # YouTube limit 100
+            response = None
+            while response is None:
+                status, response = request.next_chunk()
+                if status:
+                    logger.info(f"Uploaded {int(status.progress() * 100)}%")
 
-                # Description
-                # description_box = page.locator("#textbox").nth(1) # Approximate
+            logger.info(f"YouTube Upload Complete! Video ID: {response.get('id')}")
+            return response.get('id')
 
-                # Click Next, Next, Next until Visibility
-                logger.info("Navigating wizard...")
-                for _ in range(3):
-                    page.click("#next-button")
-                    time.sleep(1)
-
-                # Set Visibility to Public
-                logger.info("Setting visibility to Public...")
-                page.click("name=PUBLIC") # Radio button
-
-                # Publish
-                logger.info("Publishing...")
-                page.click("#done-button")
-                
-                logger.info("Upload sequence finished.")
-                time.sleep(5)
-                return True
-
-            except Exception as e:
-                logger.error(f"YouTube upload failed: {e}")
-                page.screenshot(path="debug_yt_fail.png")
-                return False
-            finally:
-                browser.close()
+        except HttpError as e:
+            logger.error(f"An HTTP error occurred during YouTube upload: {e.resp.status} {e.content}")
+        except Exception as e:
+            logger.error(f"YouTube upload failed: {e}")

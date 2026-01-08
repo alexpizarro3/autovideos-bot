@@ -34,8 +34,10 @@ jobs:
       - name: Create Secrets Files
         env:
           TIKTOK_COOKIES: ${{ secrets.TIKTOK_COOKIES_JSON }}
+          YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN_JSON }}
         run: |
           echo "$TIKTOK_COOKIES" > tiktok_cookies.json
+          echo "$YOUTUBE_TOKEN" > youtube_token.json
 
       - name: Run Bot
         env:

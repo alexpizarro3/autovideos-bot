@@ -1,0 +1,56 @@
+name: Daily Video Bot
+
+on:
+  schedule:
+    # Run daily at 10:00 AM UTC (adjust as needed)
+    - cron: '0 10 * * *'
+  workflow_dispatch:
+    # Allow manual trigger
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install chromium
+          # Install system deps for moviepy/imageio if needed (usually handled by pip)
+
+      - name: Create Secrets Files
+        env:
+          TIKTOK_COOKIES: ${{ secrets.TIKTOK_COOKIES_JSON }}
+        run: |
+          echo "$TIKTOK_COOKIES" > tiktok_cookies.json
+
+      - name: Run Bot
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          PYTHONPATH: src
+        run: |
+          # Headless is required for CI. Ensure uploader uses headless=True (it does)
+          python src/main.py
+
+      - name: Upload Artifacts (on failure or success)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bot-artifacts
+          path: |
+            output/*.mp4
+            *.png
+            *.log
+            debug_*.html
+          retention-days: 5

@@ -1,0 +1,8 @@
+moviepy
+edge-tts
+requests
+python-dotenv
+huggingface_hub
+playwright
+pytest
+

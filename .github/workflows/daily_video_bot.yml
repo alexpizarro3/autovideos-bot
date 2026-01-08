@@ -1,0 +1,47 @@
+name: Daily Video Bot
+
+on:
+  schedule:
+    - cron: '0 10 * * *' # Runs at 10:00 UTC every day
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Playwright Browsers
+        run: |
+          playwright install chromium
+          playwright install-deps
+
+      - name: Run Video Generator and Uploader
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          TIKTOK_SESSION_ID: ${{ secrets.TIKTOK_SESSION_ID }}
+        run: |
+          python src/main.py
+      
+      - name: Upload Video Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: daily_video
+          path: output/*.mp4
+          retention-days: 7

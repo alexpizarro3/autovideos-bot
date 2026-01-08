@@ -28,9 +28,13 @@ class ImageProvider:
                 # URL encode the prompt
                 encoded_prompt = quote(prompt)
                 
-                # Construct URL
-                # Example: https://image.pollinations.ai/prompt/A%20cat%20in%20space?width=1080&height=1920&nologo=true
-                url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={self.width}&height={self.height}&nologo=true&model=flux" 
+                # Add delay to avoid rate limits (Pollinations anonymous tier)
+                time.sleep(10)
+
+                # Construct URL with random seed to ensure freshness
+                import random
+                seed = random.randint(0, 999999)
+                url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={self.width}&height={self.height}&nologo=true&model=flux&seed={seed}" 
                 
                 response = requests.get(url, timeout=60) # Increased timeout to 60s
                 response.raise_for_status()

@@ -3,7 +3,9 @@ name: Daily Video Bot
 on:
   schedule:
     # Run daily at 10:00 AM UTC (adjust as needed)
-    - cron: '0 10 * * *'
+    # Viral Schedule: 12:30 PM & 8:30 PM (CST/UTC-6)
+    # 12:30 PM CST = 18:30 UTC | 8:30 PM CST = 02:30 UTC
+    - cron: '30 18,2 * * *'
   workflow_dispatch:
     # Allow manual trigger
 

@@ -3,6 +3,7 @@ import logging
 import random
 import time
 from datetime import datetime
+import sys
 from dotenv import load_dotenv
 
 from config import NICHES, TEMP_DIR, OUTPUT_DIR, VIDEO_WIDTH, VIDEO_HEIGHT
@@ -28,6 +29,12 @@ def main():
     load_dotenv()
     ensure_dirs()
     
+    # Debug: Check environment
+    token = os.getenv("HF_TOKEN")
+    logger.info(f"HF_TOKEN present: {bool(token)}")
+    if token:
+        logger.info(f"HF_TOKEN prefix: {token[:4]}...")
+    
     logger.info("Starting Daily Video Bot Workflow (Free Stack)...")
     
     # 1. Select Topic
@@ -40,7 +47,7 @@ def main():
     
     if not script_response or 'scenes' not in script_response:
         logger.error("Failed to generate script or invalid format. Exiting.")
-        return
+        sys.exit(1)
 
     scenes_data = script_response['scenes']
     video_title = script_response.get('title', f"Daily Fact: {topic}")
@@ -81,7 +88,7 @@ def main():
 
     if not scenes:
         logger.error("No scenes were successfully generated. Exiting.")
-        return
+        sys.exit(1)
 
     # 4. Compile Video
     video_maker = VideoMaker(width=VIDEO_WIDTH, height=VIDEO_HEIGHT)
@@ -93,7 +100,7 @@ def main():
         logger.info(f"Video created successfully: {output_video_path}")
     except Exception as e:
         logger.error(f"Failed to create video: {e}")
-        return
+        sys.exit(1)
 
     # 5. Upload (Dry run check or actual upload)
     # Check for upload flag or environment variable

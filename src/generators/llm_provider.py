@@ -25,27 +25,33 @@ class LLMProvider:
         Returns a dict with 'title', 'description', 'hashtags', and 'scenes'.
         """
         prompt = f"""
-You are a professional short-video content creator for TikTok. Create a viral, fast-paced video plan about: "{topic}".
+You are an expert short-form video scriptwriter for TikTok/YouTube Shorts. Your goal is MAXIMAL RETENTION.
+Topic: "{topic}"
 
-The output MUST be valid JSON with the following structure:
+Structure your script for HIGH ENGAGEMENT:
+1. **The Hook (0-3s)**: A shocking statement or question. MUST stop the scroll.
+2. **The Meat**: Fast facts, surprising details.
+3. **The Twist/Ending**: A final punchline or loop.
+
+The output MUST be valid JSON:
 {{
-  "title": "A catchy, clickbait-style title (max 50 chars). Do NOT mention a specific number of facts (like '10 Facts') unless the script actually contains that many. Prefer generic 'Mind-Blowing Facts' or specific topic titles.",
-  "description": "A short, engaging caption for the post (1 sentence)",
-  "hashtags": ["#5", "#relevant", "#hashtags", "#here", "#fyp"],
+  "title": "CLICKBAIT TITLE (All caps allowed, e.g. 'YOU WONT BELIEVE THIS 😱')",
+  "description": "Engaging caption with a question for comments.",
+  "hashtags": ["#viral", "#fyp", "#shorts", "#topic"],
   "scenes": [
     {{
-      "text": "Voiceover text for scene 1", 
-      "image_prompt": "Detailed, specific, cinematic AI image generation prompt for scene 1"
+      "text": "Short sentence for voiceover (max 10 words per scene for fast pacing).", 
+      "image_prompt": "Hyper-realistic, cinematic, motion-blur, 8k image description matching the text."
     }},
     ...
   ]
 }}
 
 Requirements:
-- Video duration total approx 45-60s.
-- Hashtags: Include exactly 5 hashtags. Mix generic (e.g. #fyp) with niche-specific ones. NO #test.
-- Scenes: Provide enough scenes for the duration.
-- Do not include any markdown formatting. Just raw JSON.
+- **Total Duration**: 30-45 seconds (Fast paced!).
+- **Tone**: Energetic, urgent, mysterious.
+- **Visuals**: Describe images that would look good even if static (but we will animate them).
+- **NO Markdown**: Output ONLY raw JSON.
         """
 
         try:

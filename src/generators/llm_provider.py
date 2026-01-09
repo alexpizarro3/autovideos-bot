@@ -51,6 +51,9 @@ Requirements:
 - **Total Duration**: 30-45 seconds (Fast paced!).
 - **Tone**: Energetic, urgent, mysterious.
 - **Visuals**: Describe images that would look good even if static (but we will animate them).
+- **CRITICAL JSON RULES**: 
+  - Do NOT use unescaped double quotes (`"`) inside strings. Use single quotes (`'`) instead. Example: "It's called 'The Zone'", NOT "It's called "The Zone"".
+  - Do NOT include trailing commas.
 - **NO Markdown**: Output ONLY raw JSON.
         """
 

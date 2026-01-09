@@ -170,16 +170,39 @@ class TikTokUploader:
                         time.sleep(1)
                     
                     if post_btn.is_enabled():
+                        # Debug: Check for any visible warning/error before clicking
+                        try:
+                            # Try to capture context around 'Checks' or generic error text
+                            content = page.content()
+                            if "Something went wrong" in content:
+                                logger.warning("Potential error detected in page content: 'Something went wrong'")
+                            
+                            # Log visible text of buttons just to be sure
+                            logger.info(f"Post button text: {post_btn.text_content()}")
+                        except:
+                            pass
+
                         logger.info("Clicking Post...")
                         # Use JS click to avoid strictness issues if something small overlaps
                         post_btn.click(force=True)
+
+                        # Check for Toasts (Error messages)
+                        try:
+                            # TUXToast or generic toast class
+                            toast = page.locator("div[class*='Toast'], div[role='alert']").first
+                            # We listen for a brief moment
+                            time.sleep(1)
+                            if toast.is_visible():
+                                logger.info(f"Toast detected: {toast.text_content()}")
+                        except:
+                            pass
 
                         
                         # Check for Modal with DEEP DEBUGGING
                         logger.info("Checking for potential blocking modal...")
                         
                         # Wait a moment for modal animation
-                        time.sleep(3)
+                        time.sleep(6)
                         
                         # Capture state for analysis
                         page.screenshot(path="debug_modal_visible.png")
